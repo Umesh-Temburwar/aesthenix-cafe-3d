@@ -49,6 +49,7 @@ export const Navbar: React.FC = () => {
     { label: 'Gallery', path: '/gallery' },
     { label: 'Reservations', path: '/reservations' },
     { label: 'Contact', path: '/contact' },
+    { label: 'Case Study', path: '/case-study' },
   ];
 
   return (

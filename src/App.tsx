@@ -13,7 +13,9 @@ import { ExperiencePage } from './pages/ExperiencePage';
 import { GalleryPage } from './pages/GalleryPage';
 import { ReservationsPage } from './pages/ReservationsPage';
 import { ContactPage } from './pages/ContactPage';
+import { CaseStudyPage } from './pages/CaseStudyPage';
 import { NotFoundPage } from './pages/NotFoundPage';
+import { AmbientSoundscapePlayer } from './components/audio/AmbientSoundscapePlayer';
 
 // Scroll to top on route change
 function ScrollToTop() {
@@ -46,12 +48,14 @@ export const App: React.FC<{ skipInitialLoading?: boolean }> = ({ skipInitialLoa
           <Route path="/gallery" element={<GalleryPage />} />
           <Route path="/reservations" element={<ReservationsPage />} />
           <Route path="/contact" element={<ContactPage />} />
+          <Route path="/case-study" element={<CaseStudyPage />} />
           <Route path="*" element={<NotFoundPage />} />
         </Routes>
       </main>
 
       <Footer />
       <CartDrawer />
+      <AmbientSoundscapePlayer />
       <BackToTop />
     </div>
   );

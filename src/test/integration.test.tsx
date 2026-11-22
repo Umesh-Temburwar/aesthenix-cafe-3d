@@ -113,6 +113,48 @@ describe('AURA ROAST Complete Integration Suite', () => {
     expect(screen.getByText(/Precision Pour Over/i)).toBeInTheDocument();
   });
 
+  it('renders the 3D Bespoke Cup Studio and toggles views on the Menu page', async () => {
+    render(
+      <MemoryRouter initialEntries={['/menu']}>
+        <App skipInitialLoading={true} />
+      </MemoryRouter>
+    );
+
+    expect(screen.getByRole('heading', { level: 1, name: /The Artisan/i })).toBeInTheDocument();
+    const customizerTab = screen.getByRole('button', { name: /3D Bespoke Cup Studio/i });
+    expect(customizerTab).toBeInTheDocument();
+
+    // Switch to 3D Customizer
+    fireEvent.click(customizerTab);
+    expect(screen.getByText(/Design Your Signature Cup/i)).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /Add Bespoke Cup to Order/i })).toBeInTheDocument();
+  });
+
+  it('renders the Agency Portfolio Case Study page with core innovation pillars', async () => {
+    render(
+      <MemoryRouter initialEntries={['/case-study']}>
+        <App skipInitialLoading={true} />
+      </MemoryRouter>
+    );
+
+    expect(screen.getByText(/AesthenixTech Flagship Portfolio Case Study/i)).toBeInTheDocument();
+    expect(screen.getByText(/Four Technological Breakthroughs/i)).toBeInTheDocument();
+    expect(screen.getByText(/10-Second Storefront Reel & Stacking Logo/i)).toBeInTheDocument();
+    expect(screen.getByText(/Interactive 3D 9.2-Bar Barista Simulator/i)).toBeInTheDocument();
+  });
+
+  it('renders the Ambient Lo-Fi Soundscape player with procedural audio controls', async () => {
+    render(
+      <MemoryRouter initialEntries={['/']}>
+        <App skipInitialLoading={true} />
+      </MemoryRouter>
+    );
+
+    const soundscapePlayer = screen.getByRole('complementary', { name: /Ambient Lo-Fi Soundscape Player/i });
+    expect(soundscapePlayer).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /Play Ambient Soundscape/i })).toBeInTheDocument();
+  });
+
   it('renders 404 page for unknown URLs', async () => {
     render(
       <MemoryRouter initialEntries={['/nonexistent-vintage']}>

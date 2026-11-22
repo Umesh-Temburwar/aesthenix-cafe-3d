@@ -80,6 +80,14 @@ export const Footer: React.FC = () => {
                   Location & Hours
                 </Link>
               </li>
+              <li>
+                <Link to="/case-study" className="hover:text-aura-gold transition-colors text-aura-gold flex items-center gap-1">
+                  <span>Agency Case Study</span>
+                  <span className="text-[9px] px-1.5 py-0.2 rounded bg-aura-gold/20 text-aura-gold uppercase font-mono">
+                    3D
+                  </span>
+                </Link>
+              </li>
             </ul>
           </div>
 

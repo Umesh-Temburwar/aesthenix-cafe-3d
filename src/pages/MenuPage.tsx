@@ -1,10 +1,12 @@
 import React, { useState, useMemo } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { PRODUCTS } from '../data/products';
 import { ProductCategory, Product } from '../types';
 import { ProductDetailModal } from '../components/menu/ProductDetailModal';
+import { CupCustomizerScene } from '../scenes/CupCustomizer/CupCustomizerScene';
 import { useCartStore } from '../stores/useCartStore';
 import { formatINR } from '../utils/format';
-import { Search, Filter, Star, Plus, Check, Sparkles, Coffee } from 'lucide-react';
+import { Search, Filter, Star, Plus, Check, Sparkles, Coffee, Palette } from 'lucide-react';
 
 const CATEGORIES: { id: ProductCategory; label: string }[] = [
   { id: 'all', label: 'All Offerings' },
@@ -18,13 +20,16 @@ const CATEGORIES: { id: ProductCategory; label: string }[] = [
 ];
 
 export const MenuPage: React.FC = () => {
+  const [searchParams] = useSearchParams();
+  const initialView = searchParams.get('view') === 'customizer' ? 'customizer' : 'catalog';
+  const [activeView, setActiveView] = useState<'catalog' | 'customizer'>(initialView);
   const [activeCategory, setActiveCategory] = useState<ProductCategory>('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [sortBy, setSortBy] = useState<'featured' | 'price-asc' | 'price-desc' | 'rating'>('featured');
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [addedItemNotice, setAddedItemNotice] = useState<string | null>(null);
 
-  const { addItem } = useCartStore();
+  const { addItem, openCart } = useCartStore();
 
   const filteredProducts = useMemo(() => {
     return PRODUCTS.filter((product) => {
@@ -57,9 +62,9 @@ export const MenuPage: React.FC = () => {
     <div className="pt-28 pb-24 min-h-screen bg-aura-bg">
       <div className="max-w-7xl mx-auto px-6">
         {/* Header */}
-        <div className="text-center max-w-2xl mx-auto mb-12">
+        <div className="text-center max-w-2xl mx-auto mb-8">
           <span className="text-[10px] uppercase font-bold tracking-widest text-aura-gold px-3 py-1 rounded-full bg-aura-gold/15 border border-aura-gold/30 inline-block mb-3">
-            Seasonal Selections
+            Seasonal Selections & 3D Atelier
           </span>
           <h1 className="font-serif text-4xl sm:text-6xl font-bold text-aura-cream mb-4">
             The Artisan <span className="gold-gradient-text italic font-normal">Café Menu</span>
@@ -67,38 +72,76 @@ export const MenuPage: React.FC = () => {
           <p className="text-xs sm:text-sm text-aura-muted leading-relaxed">
             Every creation is prepared on demand with uncompromised dedication to origin, thermal control, and sensory balance.
           </p>
-        </div>
 
-        {/* Search & Sort Controls Bar */}
-        <div className="glass-card p-4 rounded-2xl border border-aura-border mb-8 flex flex-col md:flex-row gap-4 items-center justify-between">
-          {/* Search Input */}
-          <div className="relative w-full md:w-96">
-            <Search className="w-4 h-4 text-aura-gold absolute left-3.5 top-1/2 -translate-y-1/2" />
-            <input
-              type="text"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Search roasts, origin terroir, notes..."
-              className="w-full pl-10 pr-4 py-2 rounded-xl bg-aura-bg/80 border border-aura-border text-xs text-aura-cream placeholder-aura-muted/50 focus:outline-none focus:border-aura-gold transition-colors"
-            />
-          </div>
-
-          {/* Sort Selector */}
-          <div className="flex items-center gap-2 w-full md:w-auto justify-end">
-            <Filter className="w-3.5 h-3.5 text-aura-gold" />
-            <span className="text-xs text-aura-muted">Sort By:</span>
-            <select
-              value={sortBy}
-              onChange={(e) => setSortBy(e.target.value as any)}
-              className="bg-aura-bg border border-aura-border rounded-xl px-3 py-2 text-xs text-aura-cream focus:outline-none focus:border-aura-gold transition-colors"
+          {/* Dual Experience Mode Switcher */}
+          <div className="mt-7 inline-flex items-center p-1.5 rounded-2xl bg-aura-card border border-aura-border shadow-lg">
+            <button
+              type="button"
+              onClick={() => setActiveView('catalog')}
+              className={`px-5 py-2.5 rounded-xl text-xs font-semibold flex items-center gap-2 transition-all ${
+                activeView === 'catalog'
+                  ? 'bg-aura-gold text-aura-bg shadow-gold-glow'
+                  : 'text-aura-muted hover:text-aura-cream'
+              }`}
             >
-              <option value="featured">Featured Roasts</option>
-              <option value="price-asc">Price: Low to High</option>
-              <option value="price-desc">Price: High to Low</option>
-              <option value="rating">Top Rated</option>
-            </select>
+              <Coffee className="w-3.5 h-3.5" />
+              <span>Artisan Roasts Catalog</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => setActiveView('customizer')}
+              className={`px-5 py-2.5 rounded-xl text-xs font-semibold flex items-center gap-2 transition-all ${
+                activeView === 'customizer'
+                  ? 'bg-aura-gold text-aura-bg shadow-gold-glow'
+                  : 'text-aura-muted hover:text-aura-cream'
+              }`}
+            >
+              <Palette className="w-3.5 h-3.5" />
+              <span>3D Bespoke Cup Studio</span>
+              <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-aura-cream/20 text-white uppercase font-mono">
+                New
+              </span>
+            </button>
           </div>
         </div>
+
+        {/* ================= CONDITIONAL CONTENT ================= */}
+        {activeView === 'customizer' ? (
+          <div className="mb-12">
+            <CupCustomizerScene onAddedToCart={openCart} />
+          </div>
+        ) : (
+          <>
+            {/* Search & Sort Controls Bar */}
+            <div className="glass-card p-4 rounded-2xl border border-aura-border mb-8 flex flex-col md:flex-row gap-4 items-center justify-between">
+              {/* Search Input */}
+              <div className="relative w-full md:w-96">
+                <Search className="w-4 h-4 text-aura-gold absolute left-3.5 top-1/2 -translate-y-1/2" />
+                <input
+                  type="text"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  placeholder="Search roasts, origin terroir, notes..."
+                  className="w-full pl-10 pr-4 py-2 rounded-xl bg-aura-bg/80 border border-aura-border text-xs text-aura-cream placeholder-aura-muted/50 focus:outline-none focus:border-aura-gold transition-colors"
+                />
+              </div>
+
+              {/* Sort Selector */}
+              <div className="flex items-center gap-2 w-full md:w-auto justify-end">
+                <Filter className="w-3.5 h-3.5 text-aura-gold" />
+                <span className="text-xs text-aura-muted">Sort By:</span>
+                <select
+                  value={sortBy}
+                  onChange={(e) => setSortBy(e.target.value as any)}
+                  className="bg-aura-bg border border-aura-border rounded-xl px-3 py-2 text-xs text-aura-cream focus:outline-none focus:border-aura-gold transition-colors"
+                >
+                  <option value="featured">Featured Roasts</option>
+                  <option value="price-asc">Price: Low to High</option>
+                  <option value="price-desc">Price: High to Low</option>
+                  <option value="rating">Top Rated</option>
+                </select>
+              </div>
+            </div>
 
         {/* Category Filter Pills */}
         <div className="flex items-center gap-2 overflow-x-auto pb-4 mb-10 no-scrollbar">
@@ -220,6 +263,8 @@ export const MenuPage: React.FC = () => {
               </div>
             ))}
           </div>
+        )}
+          </>
         )}
       </div>
 
