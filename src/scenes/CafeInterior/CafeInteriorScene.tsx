@@ -4,7 +4,7 @@ import { CafeInteriorModel } from '../../components/three/CafeInteriorModel';
 import { CameraController } from '../../components/three/CameraController';
 import { CanvasFallback } from '../../components/three/CanvasFallback';
 import { CAFE_ZONES } from '../../data/cafeZones';
-import { Compass, RotateCcw, Play, Pause, ChevronRight } from 'lucide-react';
+import { Compass, RotateCcw, Play, Pause, ChevronRight, Sun, Moon } from 'lucide-react';
 
 interface CafeInteriorSceneProps {
   className?: string;
@@ -18,6 +18,7 @@ export const CafeInteriorScene: React.FC<CafeInteriorSceneProps> = ({
   const [activeZoneId, setActiveZoneId] = useState<string>('espresso-bar');
   const [isTourActive, setIsTourActive] = useState<boolean>(false);
   const [reducedMotion, setReducedMotion] = useState<boolean>(false);
+  const [atmosphereMode, setAtmosphereMode] = useState<'day' | 'evening'>('day');
   const tourIntervalRef = useRef<number | null>(null);
 
   const activeZone = CAFE_ZONES.find((z) => z.id === activeZoneId) || CAFE_ZONES[0];
@@ -46,6 +47,8 @@ export const CafeInteriorScene: React.FC<CafeInteriorSceneProps> = ({
     setActiveZoneId('espresso-bar');
   };
 
+  const isDay = atmosphereMode === 'day';
+
   return (
     <div className={`relative w-full h-full min-h-[500px] overflow-hidden rounded-3xl border border-aura-border bg-aura-bg ${className}`}>
       <Suspense fallback={<CanvasFallback title="AURA ROAST Sanctuary" subtitle="Loading 3D Café Interior..." />}>
@@ -55,24 +58,27 @@ export const CafeInteriorScene: React.FC<CafeInteriorSceneProps> = ({
           gl={{ antialias: true, powerPreference: 'high-performance' }}
           dpr={[1, Math.min(window.devicePixelRatio, 1.75)]}
         >
-          {/* Atmosphere Lighting */}
-          <ambientLight intensity={0.4} color="#FFE8D6" />
+          {/* Dynamic Day / Evening Atmosphere Lighting */}
+          <ambientLight
+            intensity={isDay ? 0.5 : 0.22}
+            color={isDay ? '#FFEADA' : '#42281D'}
+          />
 
-          {/* Sunlight streaming through arched back windows */}
+          {/* Sunlight or Moonlight through arched back windows */}
           <directionalLight
-            position={[0, 7, -10]}
-            intensity={2.2}
-            color="#FFF4E0"
+            position={[0, 7.5, -10]}
+            intensity={isDay ? 2.4 : 0.45}
+            color={isDay ? '#FFF5E0' : '#8FA9BF'}
             castShadow
             shadow-mapSize={[2048, 2048]}
             shadow-bias={-0.0002}
           />
 
-          {/* Front Warm Ambient Fill */}
+          {/* Front Warm Accent Light */}
           <directionalLight
             position={[0, 4, 10]}
-            intensity={0.8}
-            color="#C9A46A"
+            intensity={isDay ? 0.7 : 1.1}
+            color={isDay ? '#C9A46A' : '#FF9933'}
           />
 
           <CameraController
@@ -108,6 +114,26 @@ export const CafeInteriorScene: React.FC<CafeInteriorSceneProps> = ({
 
             {/* Quick Actions */}
             <div className="flex items-center gap-2 pointer-events-auto">
+              {/* Day / Evening Atmosphere Shift (Inspired by Notes Coffee, London) */}
+              <button
+                type="button"
+                onClick={() => setAtmosphereMode(isDay ? 'evening' : 'day')}
+                className="glass-card px-3 py-2 rounded-full border border-aura-border text-xs text-aura-cream hover:text-aura-gold hover:border-aura-gold transition-colors flex items-center gap-1.5 shadow-sm"
+                title={isDay ? 'Switch to Evening Velvet Lounge' : 'Switch to Morning Daylight'}
+              >
+                {isDay ? (
+                  <>
+                    <Sun className="w-3.5 h-3.5 text-amber-400" />
+                    <span className="hidden sm:inline">Morning Light</span>
+                  </>
+                ) : (
+                  <>
+                    <Moon className="w-3.5 h-3.5 text-aura-gold" />
+                    <span className="hidden sm:inline">Evening Lounge</span>
+                  </>
+                )}
+              </button>
+
               <button
                 type="button"
                 onClick={() => setIsTourActive(!isTourActive)}

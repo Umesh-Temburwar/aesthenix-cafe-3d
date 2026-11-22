@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { CoffeeHeroScene } from '../scenes/CoffeeHero/CoffeeHeroScene';
 import { CafeInteriorScene } from '../scenes/CafeInterior/CafeInteriorScene';
 import { BrewingExperience } from '../components/brewing/BrewingExperience';
+import { TerroirCompass } from '../components/home/TerroirCompass';
 import { ProductDetailModal } from '../components/menu/ProductDetailModal';
 import { ReservationForm } from '../components/reservations/ReservationForm';
 import { PRODUCTS } from '../data/products';
@@ -365,6 +366,25 @@ export const HomePage: React.FC = () => {
           </div>
 
           <BrewingExperience />
+        </div>
+      </section>
+
+      {/* ================= GLOBAL TERROIR COMPASS (Inspired by %Arabica & kape) ================= */}
+      <section className="py-24 bg-aura-surface relative border-t border-aura-border">
+        <div className="max-w-7xl mx-auto px-6">
+          <div className="text-center max-w-2xl mx-auto mb-12">
+            <span className="text-[10px] uppercase font-bold tracking-widest text-aura-gold px-3 py-1 rounded-full bg-aura-gold/15 border border-aura-gold/30 inline-block mb-3">
+              Direct Origin Terroirs
+            </span>
+            <h2 className="font-serif text-4xl sm:text-5xl font-bold text-aura-cream mb-3">
+              See The World <span className="gold-gradient-text italic font-normal">Through Coffee</span>
+            </h2>
+            <p className="text-xs sm:text-sm text-aura-muted leading-relaxed">
+              Explore our four direct-trade farming partners. We cultivate single-origin relationships above 1,800 MASL, paying premium ethical prices directly to harvest cooperatives.
+            </p>
+          </div>
+
+          <TerroirCompass />
         </div>
       </section>
 
