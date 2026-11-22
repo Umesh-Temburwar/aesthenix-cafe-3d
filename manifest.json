@@ -1,0 +1,17 @@
+{
+  "name": "AURA ROAST — Luxury 3D Café",
+  "short_name": "AURA ROAST",
+  "description": "Where Every Sip Becomes an Experience. A flagship immersive 3D digital café by AesthenixTech.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#100D0B",
+  "theme_color": "#1F130E",
+  "icons": [
+    {
+      "src": "/favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
