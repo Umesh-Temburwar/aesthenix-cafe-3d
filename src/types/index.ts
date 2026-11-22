@@ -42,6 +42,14 @@ export interface Product {
   prepTime: string;
   roastLevel?: 'Light' | 'Light-Medium' | 'Medium' | 'Medium-Dark' | 'Dark';
   origin?: string;
+  flavorProfile?: {
+    acidity: number;
+    body: number;
+    sweetness: number;
+    aroma: number;
+    finish: number;
+  };
+  tastingNotes?: string[];
   ingredients: string[];
   allergens?: string[];
   featured?: boolean;

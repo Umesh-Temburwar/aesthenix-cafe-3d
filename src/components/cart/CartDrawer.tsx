@@ -1,8 +1,50 @@
 import React, { useState, useEffect } from 'react';
-import { X, Trash2, Plus, Minus, ShoppingBag, ArrowRight, ShieldCheck, CheckCircle2 } from 'lucide-react';
+import { 
+  X, 
+  Trash2, 
+  Plus, 
+  Minus, 
+  ShoppingBag, 
+  ArrowRight, 
+  ShieldCheck, 
+  CheckCircle2, 
+  Coffee, 
+  Sparkles, 
+  Flame, 
+  Clock, 
+  Check, 
+  ChevronRight 
+} from 'lucide-react';
 import { useCartStore } from '../../stores/useCartStore';
 import { formatINR } from '../../utils/format';
 import { Link } from 'react-router-dom';
+
+const TRACKER_STAGES = [
+  {
+    step: 1,
+    title: 'EK43 Precision Grind',
+    description: '18.5g single-origin microlot weighed to ±0.05g at 350 microns.',
+    station: 'Grind Station A • EK43S',
+  },
+  {
+    step: 2,
+    title: '9.2-Bar Hydraulic Extraction',
+    description: 'E61 saturated grouphead at 93.5°C pulling 36g golden hazelnut crema.',
+    station: 'Group 1 • Custom Brass E61',
+  },
+  {
+    step: 3,
+    title: 'Artisanal Microfoam Steaming',
+    description: 'Organic Guernsey milk textured to 62°C with artisanal rosetta pour.',
+    station: 'Steam Bay 2 • Dry Steam Wand',
+  },
+  {
+    step: 4,
+    title: 'Ready at Sanctuary Bar',
+    description: 'Presented on hammered brass tray with crystal sparkling water.',
+    station: 'Pickup Counter • Sanctuary Lounge',
+  },
+];
 
 export const CartDrawer: React.FC = () => {
   const {
@@ -20,6 +62,9 @@ export const CartDrawer: React.FC = () => {
 
   const [isCheckoutDemoOpen, setIsCheckoutDemoOpen] = useState(false);
   const [demoOrderPlaced, setDemoOrderPlaced] = useState(false);
+  const [orderCode, setOrderCode] = useState('');
+  const [orderSnapshot, setOrderSnapshot] = useState<typeof items>([]);
+  const [trackerStage, setTrackerStage] = useState(0);
 
   useEffect(() => {
     if (isOpen) {
@@ -32,6 +77,14 @@ export const CartDrawer: React.FC = () => {
     };
   }, [isOpen]);
 
+  useEffect(() => {
+    if (!demoOrderPlaced) return;
+    const interval = setInterval(() => {
+      setTrackerStage((prev) => (prev < 3 ? prev + 1 : prev));
+    }, 3200);
+    return () => clearInterval(interval);
+  }, [demoOrderPlaced]);
+
   const subtotal = getSubtotal();
   const tax = getTaxAmount();
   const packaging = getPackagingFee();
@@ -40,15 +93,18 @@ export const CartDrawer: React.FC = () => {
   if (!isOpen) return null;
 
   const handleSimulateDemoCheckout = () => {
+    const code = '#AURA-' + Math.floor(1000 + Math.random() * 9000);
+    setOrderCode(code);
+    setOrderSnapshot([...items]);
+    setTrackerStage(0);
     setDemoOrderPlaced(true);
-    setTimeout(() => {
-      clearCart();
-    }, 1500);
+    clearCart();
   };
 
   const resetCheckoutModal = () => {
     setIsCheckoutDemoOpen(false);
     setDemoOrderPlaced(false);
+    setTrackerStage(0);
   };
 
   return (
@@ -277,23 +333,152 @@ export const CartDrawer: React.FC = () => {
                 </div>
               </div>
             ) : (
-              <div className="text-center py-4">
-                <div className="w-16 h-16 rounded-full bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center mx-auto mb-4 text-emerald-400">
-                  <CheckCircle2 className="w-9 h-9" />
+              <div className="py-2 space-y-4">
+                {/* Header with Order Code and Live Indicator */}
+                <div className="flex items-center justify-between pb-3 border-b border-aura-border">
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse" />
+                      <span className="text-[10px] uppercase font-bold tracking-widest text-emerald-400">
+                        Live Barista Tracker
+                      </span>
+                    </div>
+                    <h3 className="text-xl font-serif font-bold text-aura-cream mt-0.5">
+                      Order {orderCode}
+                    </h3>
+                  </div>
+
+                  <span className="text-[10px] font-semibold text-aura-gold px-2.5 py-1 rounded-full bg-aura-gold/15 border border-aura-gold/30">
+                    Demo Order Simulated!
+                  </span>
                 </div>
-                <h3 className="text-xl font-serif font-bold text-aura-cream mb-2">
-                  Demo Order Simulated!
-                </h3>
-                <p className="text-xs text-aura-muted max-w-xs mx-auto mb-6">
-                  Your simulated order has been registered in local demonstration state. Thank you for testing the AURA ROAST cart!
-                </p>
-                <button
-                  type="button"
-                  onClick={resetCheckoutModal}
-                  className="px-6 py-2.5 rounded-full text-xs font-semibold bg-aura-gold text-aura-bg shadow-gold-glow hover:bg-aura-goldLight transition-colors"
-                >
-                  Done
-                </button>
+
+                {/* Multi-stage Progress Bar */}
+                <div>
+                  <div className="flex items-center justify-between text-[11px] text-aura-muted mb-2">
+                    <span>Preparation Flow</span>
+                    <span className="text-aura-cream font-medium">
+                      Stage {trackerStage + 1} of 4
+                    </span>
+                  </div>
+
+                  {/* Visual Step Progress Line */}
+                  <div className="relative h-1.5 w-full bg-aura-card rounded-full overflow-hidden mb-3 border border-aura-border">
+                    <div
+                      className="absolute top-0 left-0 h-full bg-gradient-to-r from-aura-gold to-amber-300 transition-all duration-700 ease-out shadow-gold-glow"
+                      style={{ width: `${((trackerStage + 1) / 4) * 100}%` }}
+                    />
+                  </div>
+
+                  {/* Step Beads */}
+                  <div className="grid grid-cols-4 gap-1.5">
+                    {TRACKER_STAGES.map((stg, idx) => {
+                      const isPassed = trackerStage > idx;
+                      const isCurrent = trackerStage === idx;
+                      return (
+                        <button
+                          key={stg.step}
+                          type="button"
+                          onClick={() => setTrackerStage(idx)}
+                          className={`p-1.5 rounded-xl border text-center transition-all ${
+                            isCurrent
+                              ? 'border-aura-gold bg-aura-gold/20 text-aura-cream ring-1 ring-aura-gold/50'
+                              : isPassed
+                              ? 'border-emerald-500/40 bg-emerald-500/10 text-emerald-400'
+                              : 'border-aura-border bg-aura-card/40 text-aura-muted hover:border-aura-gold/30'
+                          }`}
+                        >
+                          <div className="flex items-center justify-center mb-0.5">
+                            {isPassed ? (
+                              <Check className="w-3 h-3 text-emerald-400" />
+                            ) : (
+                              <span className="text-[10px] font-bold">0{stg.step}</span>
+                            )}
+                          </div>
+                          <div className="text-[9px] font-semibold truncate leading-tight">
+                            {stg.title.split(' ')[0]}
+                          </div>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {/* Active Stage Highlight Card */}
+                <div className="p-4 rounded-2xl bg-aura-bg/90 border border-aura-gold/30 shadow-inner">
+                  <div className="flex items-start gap-3">
+                    <div className="w-9 h-9 rounded-xl bg-aura-card border border-aura-gold/40 flex items-center justify-center shrink-0 text-aura-gold">
+                      {trackerStage === 0 && <Clock className="w-4 h-4" />}
+                      {trackerStage === 1 && <Flame className="w-4 h-4" />}
+                      {trackerStage === 2 && <Coffee className="w-4 h-4" />}
+                      {trackerStage === 3 && <CheckCircle2 className="w-4 h-4 text-emerald-400" />}
+                    </div>
+
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center justify-between">
+                        <h4 className="text-sm font-semibold text-aura-cream">
+                          {TRACKER_STAGES[trackerStage].title}
+                        </h4>
+                        {trackerStage === 3 ? (
+                          <span className="text-[10px] font-bold text-emerald-400 uppercase tracking-wider">
+                            Ready
+                          </span>
+                        ) : (
+                          <span className="text-[10px] text-aura-gold font-mono animate-pulse">
+                            In Progress...
+                          </span>
+                        )}
+                      </div>
+                      <p className="text-xs text-aura-muted leading-relaxed mt-1">
+                        {TRACKER_STAGES[trackerStage].description}
+                      </p>
+                      <div className="text-[10px] text-aura-goldLight/80 font-mono mt-2 flex items-center gap-1">
+                        <Sparkles className="w-3 h-3 text-aura-gold" />
+                        <span>{TRACKER_STAGES[trackerStage].station}</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Order Summary Snapshot */}
+                {orderSnapshot.length > 0 && (
+                  <div className="p-3 rounded-xl bg-aura-card/50 border border-aura-border text-xs">
+                    <div className="text-[10px] uppercase font-bold text-aura-muted tracking-wider mb-2">
+                      Order Basket ({orderSnapshot.reduce((a, b) => a + b.quantity, 0)} items)
+                    </div>
+                    <div className="space-y-1.5 max-h-24 overflow-y-auto pr-1">
+                      {orderSnapshot.map((item) => (
+                        <div key={item.id} className="flex justify-between items-center text-xs">
+                          <span className="text-aura-cream truncate max-w-[200px]">
+                            {item.quantity}x {item.product.name} ({item.size.name})
+                          </span>
+                          <span className="text-aura-gold font-medium">
+                            {formatINR(item.unitPrice * item.quantity)}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Action Buttons */}
+                <div className="flex gap-2.5 pt-2">
+                  <button
+                    type="button"
+                    onClick={resetCheckoutModal}
+                    className="flex-1 py-2.5 rounded-full text-xs font-semibold border border-aura-border hover:bg-white/5 text-aura-cream transition-colors"
+                  >
+                    Close Tracker
+                  </button>
+                  <button
+                    type="button"
+                    onClick={resetCheckoutModal}
+                    className="flex-1 py-2.5 rounded-full text-xs font-semibold bg-aura-gold text-aura-bg hover:bg-aura-goldLight shadow-gold-glow transition-all flex items-center justify-center gap-1"
+                  >
+                    <span>Pick Up & Done</span>
+                    <ChevronRight className="w-3.5 h-3.5" />
+                  </button>
+                </div>
               </div>
             )}
           </div>

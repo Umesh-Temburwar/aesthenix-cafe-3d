@@ -1,9 +1,10 @@
 import React, { useState } from 'react';
-import { X, Star, Clock, Flame, ShieldAlert, Plus, Check } from 'lucide-react';
+import { X, Star, Clock, Flame, Plus, Check, Compass, BookOpen } from 'lucide-react';
 import { Product, ProductSize } from '../../types';
 import { useCartStore } from '../../stores/useCartStore';
 import { formatINR } from '../../utils/format';
 import { CoffeeShowcaseScene } from '../../scenes/CoffeeShowcase/CoffeeShowcaseScene';
+import { FlavorRadarChart } from './FlavorRadarChart';
 
 interface ProductDetailModalProps {
   product: Product | null;
@@ -17,9 +18,10 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
   if (!product) return null;
 
   const [selectedSize, setSelectedSize] = useState<ProductSize>(product.sizes[0]);
-  const [quantity, setQuantity] = useState(1);
+  const [quantity] = useState(1);
   const [addedNotice, setAddedNotice] = useState(false);
   const [viewMode, setViewMode] = useState<'3d' | 'photo'>('3d');
+  const [detailsTab, setDetailsTab] = useState<'story' | 'radar'>('story');
 
   const { addItem } = useCartStore();
 
@@ -136,17 +138,72 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
                 )}
               </div>
 
-              {/* Description */}
-              <p className="text-xs text-aura-cream/80 leading-relaxed mb-4">
-                {product.longDescription || product.description}
-              </p>
+              {/* Tab Selector between Roast Story and Sensory Radar */}
+              <div className="flex gap-4 border-b border-aura-border pb-2 mb-3">
+                <button
+                  type="button"
+                  onClick={() => setDetailsTab('story')}
+                  className={`text-xs font-semibold pb-1 flex items-center gap-1.5 transition-all ${
+                    detailsTab === 'story'
+                      ? 'text-aura-gold border-b-2 border-aura-gold'
+                      : 'text-aura-muted hover:text-aura-cream'
+                  }`}
+                >
+                  <BookOpen className="w-3.5 h-3.5" />
+                  <span>Roast Story</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setDetailsTab('radar')}
+                  className={`text-xs font-semibold pb-1 flex items-center gap-1.5 transition-all ${
+                    detailsTab === 'radar'
+                      ? 'text-aura-gold border-b-2 border-aura-gold'
+                      : 'text-aura-muted hover:text-aura-cream'
+                  }`}
+                >
+                  <Compass className="w-3.5 h-3.5 text-aura-gold" />
+                  <span>Sensory Terroir Radar</span>
+                </button>
+              </div>
 
-              {/* Origin Terroir */}
-              {product.origin && (
-                <div className="mb-4 text-xs">
-                  <span className="text-aura-muted">Origin Terroir: </span>
-                  <span className="text-aura-cream font-medium">{product.origin}</span>
-                </div>
+              {detailsTab === 'story' ? (
+                <>
+                  {/* Description */}
+                  <p className="text-xs text-aura-cream/80 leading-relaxed mb-4">
+                    {product.longDescription || product.description}
+                  </p>
+
+                  {/* Origin Terroir */}
+                  {product.origin && (
+                    <div className="mb-4 text-xs">
+                      <span className="text-aura-muted">Origin Terroir: </span>
+                      <span className="text-aura-cream font-medium">{product.origin}</span>
+                    </div>
+                  )}
+
+                  {product.tastingNotes && product.tastingNotes.length > 0 && (
+                    <div className="mb-4">
+                      <span className="text-xs text-aura-muted block mb-1.5">Tasting Notes:</span>
+                      <div className="flex flex-wrap gap-1.5">
+                        {product.tastingNotes.map((note) => (
+                          <span
+                            key={note}
+                            className="px-2.5 py-0.5 rounded-full text-[10px] font-medium bg-aura-card border border-aura-gold/30 text-aura-goldLight"
+                          >
+                            {note}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </>
+              ) : (
+                <FlavorRadarChart
+                  flavorProfile={product.flavorProfile}
+                  category={product.category}
+                  roastLevel={product.roastLevel}
+                  tastingNotes={product.tastingNotes}
+                />
               )}
 
               {/* Size Selection */}
