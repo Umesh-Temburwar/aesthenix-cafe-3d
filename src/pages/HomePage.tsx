@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { CoffeeHeroScene } from '../scenes/CoffeeHero/CoffeeHeroScene';
 import { CafeInteriorScene } from '../scenes/CafeInterior/CafeInteriorScene';
+import { StorefrontScene } from '../scenes/Storefront/StorefrontScene';
 import { BrewingExperience } from '../components/brewing/BrewingExperience';
 import { TerroirCompass } from '../components/home/TerroirCompass';
 import { ProductDetailModal } from '../components/menu/ProductDetailModal';
@@ -211,7 +212,70 @@ export const HomePage: React.FC = () => {
         </div>
       </section>
 
-      {/* ================= 03. IMMERSIVE CAFÉ TOUR SECTION ================= */}
+      {/* ================= 03. 3D STOREFRONT & SIGN ASSEMBLY SECTION ================= */}
+      <section className="py-24 bg-aura-bg relative border-t border-aura-border">
+        <div className="max-w-7xl mx-auto px-6">
+          <div className="text-center max-w-2xl mx-auto mb-10">
+            <div className="inline-flex items-center gap-1.5 px-3.5 py-1 rounded-full bg-aura-gold/15 border border-aura-gold/30 text-[10px] uppercase font-bold tracking-widest text-aura-gold mb-3">
+              <Sparkles className="w-3 h-3 text-aura-gold" />
+              <span>Flagship Storefront Cinematography</span>
+            </div>
+            <h2 className="font-serif text-4xl sm:text-5xl font-bold text-aura-cream mb-4">
+              The Architectural Facade & <br />
+              <span className="gold-gradient-text italic font-normal">3D Sign Assembly</span>
+            </h2>
+            <p className="text-xs sm:text-sm text-aura-muted leading-relaxed">
+              Watch the extruded 3D typography fly in with physics recoil, elastic bounce, and an illuminated light sweep across the royal blue facade. Look directly into the warm illuminated café interior through the ground-floor plate glass window.
+            </p>
+          </div>
+
+          {/* Interactive 3D Storefront Canvas */}
+          <div className="w-full h-[580px] rounded-3xl overflow-hidden shadow-2xl border border-aura-gold/30 mb-8">
+            <StorefrontScene showControlsOverlay={true} />
+          </div>
+
+          {/* Feature Highlights Grid */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div className="glass-card p-5 rounded-2xl border border-aura-border">
+              <div className="w-9 h-9 rounded-xl bg-aura-gold/10 flex items-center justify-center text-aura-gold mb-3 font-serif font-bold text-base">
+                01
+              </div>
+              <h4 className="font-serif text-base font-bold text-aura-cream mb-1">
+                Kinetic Spring Physics
+              </h4>
+              <p className="text-xs text-aura-muted leading-relaxed">
+                Extruded 3D characters swoop along multi-axis rotational arcs with elastic dampening and contact flash beacons upon landing.
+              </p>
+            </div>
+
+            <div className="glass-card p-5 rounded-2xl border border-aura-border">
+              <div className="w-9 h-9 rounded-xl bg-aura-gold/10 flex items-center justify-center text-aura-gold mb-3 font-serif font-bold text-base">
+                02
+              </div>
+              <h4 className="font-serif text-base font-bold text-aura-cream mb-1">
+                Warm Interior Look-In
+              </h4>
+              <p className="text-xs text-aura-muted leading-relaxed">
+                Volumetric plate glass reveals glowing globe pendants, illuminated menu chalkboard, chrome espresso machinery, and golden pastries.
+              </p>
+            </div>
+
+            <div className="glass-card p-5 rounded-2xl border border-aura-border">
+              <div className="w-9 h-9 rounded-xl bg-aura-gold/10 flex items-center justify-center text-aura-gold mb-3 font-serif font-bold text-base">
+                03
+              </div>
+              <h4 className="font-serif text-base font-bold text-aura-cream mb-1">
+                Procedural Sound Synthesis
+              </h4>
+              <p className="text-xs text-aura-muted leading-relaxed">
+                Zero external audio assets: Web Audio API synthesizes flight whooshes, tactile impact thuds, glint chimes, and 60Hz neon hum in real time.
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ================= 04. IMMERSIVE CAFÉ TOUR SECTION ================= */}
       <section className="py-24 bg-aura-bg relative">
         <div className="max-w-7xl mx-auto px-6">
           <div className="text-center max-w-2xl mx-auto mb-12">

@@ -69,6 +69,13 @@ describe('AURA ROAST Complete Integration Suite', () => {
 
     expect(screen.getByText(/The 3D Café/i)).toBeInTheDocument();
     expect(screen.getAllByText(CAFE_ZONES[0].title)[0]).toBeInTheDocument();
+
+    // Switch to Storefront Exterior tab
+    const storefrontTab = screen.getAllByRole('button', { name: /Storefront Exterior/i })[0];
+    fireEvent.click(storefrontTab);
+
+    // Verify Storefront elements are active
+    expect(screen.getByRole('button', { name: /Replay Assembly/i })).toBeInTheDocument();
   });
 
   it('validates table reservation inputs and prevents empty submission', async () => {
