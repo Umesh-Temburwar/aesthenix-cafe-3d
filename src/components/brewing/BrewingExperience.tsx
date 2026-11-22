@@ -1,9 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { BREWING_METHODS } from '../../data/brewing';
 import { BrewingMethod } from '../../types';
-import { Flame, Droplets, Coffee, Snowflake, Clock, Scale, Thermometer, Play, Pause, RotateCcw, ChevronRight, Check } from 'lucide-react';
+import { BaristaStationScene } from '../../scenes/BaristaStation/BaristaStationScene';
+import { Flame, Droplets, Coffee, Snowflake, Clock, Scale, Thermometer, Play, Pause, RotateCcw, ChevronRight, Check, Gauge, Sparkles, BookOpen } from 'lucide-react';
 
 export const BrewingExperience: React.FC = () => {
+  const [activeExperience, setActiveExperience] = useState<'3d-barista' | 'manual-methods'>('3d-barista');
   const [selectedMethod, setSelectedMethod] = useState<BrewingMethod>(BREWING_METHODS[0]);
   const [activeStepIndex, setActiveStepIndex] = useState<number>(0);
   const [isPlaying, setIsPlaying] = useState<boolean>(false);
@@ -62,8 +64,56 @@ export const BrewingExperience: React.FC = () => {
 
   return (
     <div className="glass-card rounded-3xl border border-aura-gold/30 p-6 md:p-10 shadow-2xl overflow-hidden">
-      {/* Top Method Selector Tabs */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-10">
+      {/* Top Experience Switcher (3D Barista Station vs Manual Timers) */}
+      <div className="flex flex-col sm:flex-row items-center justify-between gap-4 mb-8 pb-6 border-b border-aura-border">
+        <div>
+          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-aura-gold/15 border border-aura-gold/30 text-[10px] uppercase font-bold tracking-widest text-aura-gold mb-2">
+            <Sparkles className="w-3 h-3 text-aura-gold" />
+            <span>Interactive Roastery Science</span>
+          </div>
+          <h3 className="font-serif text-2xl sm:text-3xl font-bold text-aura-cream">
+            The Barista <span className="gold-gradient-text italic font-normal">Extraction Lab</span>
+          </h3>
+        </div>
+
+        {/* Tab Switcher */}
+        <div className="flex items-center p-1 rounded-full bg-aura-card border border-aura-border text-xs">
+          <button
+            type="button"
+            onClick={() => setActiveExperience('3d-barista')}
+            className={`px-4 py-2 rounded-full font-medium transition-all flex items-center gap-2 ${
+              activeExperience === '3d-barista'
+                ? 'bg-aura-gold text-aura-bg font-semibold shadow-gold-glow'
+                : 'text-aura-muted hover:text-aura-cream'
+            }`}
+          >
+            <Gauge className="w-3.5 h-3.5" />
+            <span>3D Barista Simulator</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setActiveExperience('manual-methods')}
+            className={`px-4 py-2 rounded-full font-medium transition-all flex items-center gap-2 ${
+              activeExperience === 'manual-methods'
+                ? 'bg-aura-gold text-aura-bg font-semibold shadow-gold-glow'
+                : 'text-aura-muted hover:text-aura-cream'
+            }`}
+          >
+            <BookOpen className="w-3.5 h-3.5" />
+            <span>Manual Brew Rituals</span>
+          </button>
+        </div>
+      </div>
+
+      {activeExperience === '3d-barista' ? (
+        <div className="w-full h-[620px] rounded-3xl overflow-hidden shadow-2xl border border-aura-gold/30">
+          <BaristaStationScene showControlsOverlay={true} />
+        </div>
+      ) : (
+        <>
+          {/* Top Method Selector Tabs */}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-10">
         {BREWING_METHODS.map((method) => {
           const isSelected = selectedMethod.id === method.id;
           return (
@@ -296,6 +346,8 @@ export const BrewingExperience: React.FC = () => {
           </div>
         </div>
       </div>
+      </>
+    )}
     </div>
   );
 };

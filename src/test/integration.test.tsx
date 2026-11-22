@@ -96,6 +96,23 @@ describe('AURA ROAST Complete Integration Suite', () => {
     });
   });
 
+  it('renders the 3D Barista Extraction & Latte Art Simulator in Brewing Lab', async () => {
+    render(
+      <MemoryRouter initialEntries={['/']}>
+        <App skipInitialLoading={true} />
+      </MemoryRouter>
+    );
+
+    expect(screen.getByText(/The Barista/i)).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /3D Barista Simulator/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /Pull 9.2-Bar Shot/i })).toBeInTheDocument();
+
+    // Switch to Manual Brew Rituals
+    const manualBtn = screen.getByRole('button', { name: /Manual Brew Rituals/i });
+    fireEvent.click(manualBtn);
+    expect(screen.getByText(/Precision Pour Over/i)).toBeInTheDocument();
+  });
+
   it('renders 404 page for unknown URLs', async () => {
     render(
       <MemoryRouter initialEntries={['/nonexistent-vintage']}>
