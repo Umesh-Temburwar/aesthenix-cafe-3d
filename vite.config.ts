@@ -4,6 +4,7 @@ import path from 'path'
 
 // https://vite.dev/config/
 export default defineConfig({
+  base: process.env.GITHUB_ACTIONS ? '/aesthenix-cafe-3d/' : '/',
   plugins: [react()],
   resolve: {
     alias: {
