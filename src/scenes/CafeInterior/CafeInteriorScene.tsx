@@ -51,50 +51,52 @@ export const CafeInteriorScene: React.FC<CafeInteriorSceneProps> = ({
 
   return (
     <div className={`relative w-full h-full min-h-[500px] overflow-hidden rounded-3xl border border-aura-border bg-aura-bg ${className}`}>
-      <Suspense fallback={<CanvasFallback title="AURA ROAST Sanctuary" subtitle="Loading 3D Café Interior..." />}>
-        <Canvas
-          shadows
-          camera={{ position: [0, 2.5, 6.5], fov: 50 }}
-          gl={{ antialias: true, powerPreference: 'high-performance' }}
-          dpr={[1, Math.min(window.devicePixelRatio, 1.75)]}
-        >
-          {/* Dynamic Day / Evening Atmosphere Lighting */}
-          <ambientLight
-            intensity={isDay ? 0.5 : 0.22}
-            color={isDay ? '#FFEADA' : '#42281D'}
-          />
+      <div className="absolute inset-0">
+        <Suspense fallback={<CanvasFallback title="AURA ROAST Sanctuary" subtitle="Loading 3D Café Interior..." />}>
+          <Canvas
+            shadows
+            camera={{ position: [0, 2.5, 6.5], fov: 50 }}
+            gl={{ antialias: true, powerPreference: 'high-performance' }}
+            dpr={[1, Math.min(window.devicePixelRatio, 1.75)]}
+          >
+            {/* Dynamic Day / Evening Atmosphere Lighting */}
+            <ambientLight
+              intensity={isDay ? 0.5 : 0.22}
+              color={isDay ? '#FFEADA' : '#42281D'}
+            />
 
-          {/* Sunlight or Moonlight through arched back windows */}
-          <directionalLight
-            position={[0, 7.5, -10]}
-            intensity={isDay ? 2.4 : 0.45}
-            color={isDay ? '#FFF5E0' : '#8FA9BF'}
-            castShadow
-            shadow-mapSize={[2048, 2048]}
-            shadow-bias={-0.0002}
-          />
+            {/* Sunlight or Moonlight through arched back windows */}
+            <directionalLight
+              position={[0, 7.5, -10]}
+              intensity={isDay ? 2.4 : 0.45}
+              color={isDay ? '#FFF5E0' : '#8FA9BF'}
+              castShadow
+              shadow-mapSize={[2048, 2048]}
+              shadow-bias={-0.0002}
+            />
 
-          {/* Front Warm Accent Light */}
-          <directionalLight
-            position={[0, 4, 10]}
-            intensity={isDay ? 0.7 : 1.1}
-            color={isDay ? '#C9A46A' : '#FF9933'}
-          />
+            {/* Front Warm Accent Light */}
+            <directionalLight
+              position={[0, 4, 10]}
+              intensity={isDay ? 0.7 : 1.1}
+              color={isDay ? '#C9A46A' : '#FF9933'}
+            />
 
-          <CameraController
-            activeZoneId={activeZoneId}
-            enableParallax={!reducedMotion}
-          />
+            <CameraController
+              activeZoneId={activeZoneId}
+              enableParallax={!reducedMotion}
+            />
 
-          <CafeInteriorModel
-            activeZoneId={activeZoneId}
-            onSelectZone={(id) => {
-              setIsTourActive(false);
-              setActiveZoneId(id);
-            }}
-          />
-        </Canvas>
-      </Suspense>
+            <CafeInteriorModel
+              activeZoneId={activeZoneId}
+              onSelectZone={(id) => {
+                setIsTourActive(false);
+                setActiveZoneId(id);
+              }}
+            />
+          </Canvas>
+        </Suspense>
+      </div>
 
       {/* ================= CONTROLS & ZONE OVERLAY ================= */}
       {showControlsOverlay && (

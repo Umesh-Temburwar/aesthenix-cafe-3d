@@ -117,6 +117,76 @@ class StorefrontAudioController {
     }
   }
 
+  // Resonant pop sound
+  public playPop() {
+    if (!this.isEnabled) return;
+    this.initCtx();
+    if (!this.ctx) return;
+
+    try {
+      const now = this.ctx.currentTime;
+      const osc = this.ctx.createOscillator();
+      const gain = this.ctx.createGain();
+
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(850, now);
+      osc.frequency.exponentialRampToValueAtTime(220, now + 0.08);
+
+      gain.gain.setValueAtTime(0.22, now);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.08);
+
+      osc.connect(gain);
+      gain.connect(this.ctx.destination);
+      osc.start(now);
+      osc.stop(now + 0.08);
+    } catch {
+      // Audio playback silently guarded
+    }
+  }
+
+  // Crisp mechanical snap when logo parts stack and lock together
+  public playLogoSnap() {
+    if (!this.isEnabled) return;
+    this.initCtx();
+    if (!this.ctx) return;
+
+    try {
+      const now = this.ctx.currentTime;
+
+      // High-pitched lock ping
+      const pingOsc = this.ctx.createOscillator();
+      const pingGain = this.ctx.createGain();
+      pingOsc.type = 'triangle';
+      pingOsc.frequency.setValueAtTime(1850, now);
+      pingOsc.frequency.exponentialRampToValueAtTime(480, now + 0.09);
+
+      pingGain.gain.setValueAtTime(0.3, now);
+      pingGain.gain.exponentialRampToValueAtTime(0.001, now + 0.09);
+
+      pingOsc.connect(pingGain);
+      pingGain.connect(this.ctx.destination);
+      pingOsc.start(now);
+      pingOsc.stop(now + 0.09);
+
+      // Low resonance latch
+      const latchOsc = this.ctx.createOscillator();
+      const latchGain = this.ctx.createGain();
+      latchOsc.type = 'square';
+      latchOsc.frequency.setValueAtTime(320, now);
+      latchOsc.frequency.exponentialRampToValueAtTime(80, now + 0.12);
+
+      latchGain.gain.setValueAtTime(0.18, now);
+      latchGain.gain.exponentialRampToValueAtTime(0.001, now + 0.12);
+
+      latchOsc.connect(latchGain);
+      latchGain.connect(this.ctx.destination);
+      latchOsc.start(now);
+      latchOsc.stop(now + 0.12);
+    } catch {
+      // Audio playback silently guarded
+    }
+  }
+
   // Shimmering chime sweep for the glint light sweep
   public playGlint() {
     if (!this.isEnabled) return;

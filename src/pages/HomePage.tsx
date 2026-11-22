@@ -230,7 +230,7 @@ export const HomePage: React.FC = () => {
           </div>
 
           {/* Interactive 3D Storefront Canvas */}
-          <div className="w-full h-[580px] rounded-3xl overflow-hidden shadow-2xl border border-aura-gold/30 mb-8">
+          <div className="w-full h-[600px] sm:h-[680px] rounded-3xl overflow-hidden shadow-2xl border border-aura-gold/30 mb-8 relative">
             <StorefrontScene showControlsOverlay={true} />
           </div>
 

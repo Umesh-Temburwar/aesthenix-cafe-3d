@@ -89,7 +89,7 @@ export const ExperiencePage: React.FC = () => {
         </div>
 
         {/* Fullscreen 3D Scene Container */}
-        <div className="flex-1 w-full min-h-[640px] rounded-3xl overflow-hidden shadow-2xl border border-aura-gold/30 relative">
+        <div className="w-full h-[640px] sm:h-[720px] lg:h-[780px] rounded-3xl overflow-hidden shadow-2xl border border-aura-gold/30 relative">
           {activeTab === 'storefront' ? (
             <StorefrontScene
               showControlsOverlay={true}

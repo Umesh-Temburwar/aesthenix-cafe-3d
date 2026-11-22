@@ -5,6 +5,10 @@ import { storefrontAudio } from '../../utils/storefrontAudio';
 
 export interface StorefrontModelProps {
   onAssemblyComplete?: () => void;
+  onTimeUpdate?: (time: number) => void;
+  currentTime?: number;
+  isPlaying?: boolean;
+  loop?: boolean;
   replayTrigger?: number;
   isNight?: boolean;
   brandMode?: 'RIGO' | 'AURA';
@@ -16,9 +20,13 @@ interface LetterConfig {
   isUpper: boolean;
   targetPos: [number, number, number];
   size: [number, number, number];
+  startPos: [number, number, number];
+  startRot: [number, number, number];
+  delay: number;
+  duration: number;
 }
 
-// Generate high-resolution canvas textures for crisp 3D letter typography
+// Generate high-resolution canvas textures for crisp 3D letter typography matching the photo
 function createLetterTexture(char: string, isUpper: boolean): THREE.CanvasTexture {
   const canvas = document.createElement('canvas');
   canvas.width = 256;
@@ -54,6 +62,69 @@ function createLetterTexture(char: string, isUpper: boolean): THREE.CanvasTextur
     ctx.lineWidth = 4;
     ctx.strokeStyle = 'rgba(255, 255, 255, 0.65)';
     ctx.strokeText(char, 128, 134);
+  }
+
+  const texture = new THREE.CanvasTexture(canvas);
+  texture.needsUpdate = true;
+  return texture;
+}
+
+// Logo Crest texture for the stacking emblem
+function createLogoTexture(brandMode: 'RIGO' | 'AURA'): THREE.CanvasTexture {
+  const canvas = document.createElement('canvas');
+  canvas.width = 256;
+  canvas.height = 256;
+  const ctx = canvas.getContext('2d');
+  if (ctx) {
+    ctx.clearRect(0, 0, 256, 256);
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+
+    // Golden circular border
+    ctx.beginPath();
+    ctx.arc(128, 128, 110, 0, Math.PI * 2);
+    ctx.lineWidth = 14;
+    ctx.strokeStyle = '#FF8C1A';
+    ctx.stroke();
+
+    ctx.beginPath();
+    ctx.arc(128, 128, 96, 0, Math.PI * 2);
+    ctx.lineWidth = 4;
+    ctx.strokeStyle = '#FFE0B2';
+    ctx.stroke();
+
+    // Coffee cup / bean silhouette
+    ctx.fillStyle = '#FFA726';
+    ctx.beginPath();
+    // Cup body
+    ctx.arc(128, 135, 48, 0, Math.PI);
+    ctx.fill();
+    // Saucer
+    ctx.fillRect(80, 182, 96, 12);
+
+    // Steam wisps
+    ctx.strokeStyle = '#FFFFFF';
+    ctx.lineWidth = 5;
+    ctx.lineCap = 'round';
+    ctx.beginPath();
+    ctx.moveTo(110, 75);
+    ctx.bezierCurveTo(105, 60, 115, 50, 110, 35);
+    ctx.stroke();
+
+    ctx.beginPath();
+    ctx.moveTo(128, 70);
+    ctx.bezierCurveTo(135, 55, 125, 45, 130, 30);
+    ctx.stroke();
+
+    ctx.beginPath();
+    ctx.moveTo(146, 75);
+    ctx.bezierCurveTo(140, 60, 150, 50, 146, 35);
+    ctx.stroke();
+
+    // Brand letter inside cup
+    ctx.fillStyle = '#FFFFFF';
+    ctx.font = '900 38px "Arial Rounded MT Bold", sans-serif';
+    ctx.fillText(brandMode === 'RIGO' ? 'R' : 'A', 128, 150);
   }
 
   const texture = new THREE.CanvasTexture(canvas);
@@ -145,206 +216,300 @@ function createMenuBoardTexture(): THREE.CanvasTexture {
 
 export const StorefrontModel: React.FC<StorefrontModelProps> = ({
   onAssemblyComplete,
+  onTimeUpdate,
+  currentTime,
+  isPlaying = true,
+  loop = true,
   replayTrigger = 0,
   isNight = false,
   brandMode = 'RIGO',
   soundEnabled = false,
 }) => {
-  const animTimeRef = useRef(0);
-  const glintSweepRef = useRef(-3.5);
+  const localTimeRef = useRef(0);
   const isAssembledRef = useRef(false);
   const glintAudioPlayed = useRef(false);
+  const logoSnapAudioPlayed = useRef(false);
   const neonHumStarted = useRef(false);
 
   const neonLightRef = useRef<THREE.PointLight>(null);
   const glintMeshRef = useRef<THREE.Mesh>(null);
   const letterGroupRefs = useRef<(THREE.Group | null)[]>([]);
   const letterLightRefs = useRef<(THREE.PointLight | null)[]>([]);
+  const logoPartARef = useRef<THREE.Group>(null);
+  const logoPartBRef = useRef<THREE.Group>(null);
+  const logoLightRef = useRef<THREE.PointLight>(null);
+  const treeBranchRef = useRef<THREE.Group>(null);
 
   useEffect(() => {
     storefrontAudio.setEnabled(soundEnabled);
   }, [soundEnabled]);
 
-  // Letter configs
+  // Letter configs with handcrafted fly-in vectors matching Instagram prompt
   const letterConfigs: LetterConfig[] = useMemo(() => {
     // Top row: "Café" (centered at Y = 0.95)
-    const topRow: LetterConfig[] = [
-      { char: 'C', isUpper: true, targetPos: [-0.65, 0.95, 0.2], size: [0.32, 0.38, 0.14] },
-      { char: 'a', isUpper: true, targetPos: [-0.24, 0.95, 0.2], size: [0.3, 0.36, 0.14] },
-      { char: 'f', isUpper: true, targetPos: [0.15, 0.97, 0.2], size: [0.28, 0.42, 0.14] },
-      { char: 'é', isUpper: true, targetPos: [0.55, 0.97, 0.2], size: [0.3, 0.38, 0.14] },
-    ];
-
     // Bottom row: "Rigo" or "AURA" (centered at Y = 0.36)
-    const bottomRow: LetterConfig[] =
-      brandMode === 'RIGO'
-        ? [
-            { char: 'R', isUpper: false, targetPos: [-1.22, 0.36, 0.22], size: [0.72, 0.82, 0.22] },
-            { char: 'i', isUpper: false, targetPos: [-0.48, 0.36, 0.22], size: [0.36, 0.82, 0.22] },
-            { char: 'g', isUpper: false, targetPos: [0.22, 0.3, 0.22], size: [0.68, 0.88, 0.22] },
-            { char: 'o', isUpper: false, targetPos: [1.02, 0.36, 0.22], size: [0.68, 0.82, 0.22] },
-          ]
-        : [
-            { char: 'A', isUpper: false, targetPos: [-1.26, 0.36, 0.22], size: [0.68, 0.82, 0.22] },
-            { char: 'U', isUpper: false, targetPos: [-0.42, 0.36, 0.22], size: [0.68, 0.82, 0.22] },
-            { char: 'R', isUpper: false, targetPos: [0.42, 0.36, 0.22], size: [0.68, 0.82, 0.22] },
-            { char: 'A', isUpper: false, targetPos: [1.26, 0.36, 0.22], size: [0.68, 0.82, 0.22] },
-          ];
-
-    return [...topRow, ...bottomRow];
+    if (brandMode === 'RIGO') {
+      return [
+        { char: 'C', isUpper: true, targetPos: [-0.65, 0.95, 0.2], size: [0.32, 0.38, 0.14], startPos: [-4.8, 3.5, 3.2], startRot: [2.5, -3.2, 1.8], delay: 1.0, duration: 0.85 },
+        { char: 'a', isUpper: true, targetPos: [-0.24, 0.95, 0.2], size: [0.3, 0.36, 0.14], startPos: [-3.5, -2.6, 2.5], startRot: [-2.2, 3.5, -1.2], delay: 1.65, duration: 0.85 },
+        { char: 'f', isUpper: true, targetPos: [0.15, 0.97, 0.2], size: [0.28, 0.42, 0.14], startPos: [0.8, 4.5, 2.8], startRot: [3.1, -1.8, 2.5], delay: 2.3, duration: 0.85 },
+        { char: 'é', isUpper: true, targetPos: [0.55, 0.97, 0.2], size: [0.3, 0.38, 0.14], startPos: [4.6, 3.2, 3.0], startRot: [-2.5, 3.0, -2.0], delay: 2.95, duration: 0.85 },
+        { char: 'R', isUpper: false, targetPos: [-1.22, 0.36, 0.22], size: [0.72, 0.82, 0.22], startPos: [-5.2, 1.2, 3.6], startRot: [4.0, -3.5, 2.2], delay: 3.6, duration: 0.85 },
+        { char: 'i', isUpper: false, targetPos: [-0.48, 0.36, 0.22], size: [0.36, 0.82, 0.22], startPos: [-0.6, -3.8, 3.0], startRot: [-3.2, 2.8, -3.1], delay: 4.25, duration: 0.85 },
+        { char: 'g', isUpper: false, targetPos: [0.22, 0.3, 0.22], size: [0.68, 0.88, 0.22], startPos: [5.0, -1.5, 3.4], startRot: [2.8, -4.0, 1.5], delay: 4.9, duration: 0.85 },
+        { char: 'o', isUpper: false, targetPos: [1.02, 0.36, 0.22], size: [0.68, 0.82, 0.22], startPos: [4.8, 4.0, 3.5], startRot: [-3.5, 3.2, -2.8], delay: 5.55, duration: 0.85 },
+      ];
+    } else {
+      return [
+        { char: 'C', isUpper: true, targetPos: [-0.65, 0.95, 0.2], size: [0.32, 0.38, 0.14], startPos: [-4.8, 3.5, 3.2], startRot: [2.5, -3.2, 1.8], delay: 1.0, duration: 0.85 },
+        { char: 'a', isUpper: true, targetPos: [-0.24, 0.95, 0.2], size: [0.3, 0.36, 0.14], startPos: [-3.5, -2.6, 2.5], startRot: [-2.2, 3.5, -1.2], delay: 1.65, duration: 0.85 },
+        { char: 'f', isUpper: true, targetPos: [0.15, 0.97, 0.2], size: [0.28, 0.42, 0.14], startPos: [0.8, 4.5, 2.8], startRot: [3.1, -1.8, 2.5], delay: 2.3, duration: 0.85 },
+        { char: 'é', isUpper: true, targetPos: [0.55, 0.97, 0.2], size: [0.3, 0.38, 0.14], startPos: [4.6, 3.2, 3.0], startRot: [-2.5, 3.0, -2.0], delay: 2.95, duration: 0.85 },
+        { char: 'A', isUpper: false, targetPos: [-1.26, 0.36, 0.22], size: [0.68, 0.82, 0.22], startPos: [-5.2, 1.2, 3.6], startRot: [4.0, -3.5, 2.2], delay: 3.6, duration: 0.85 },
+        { char: 'U', isUpper: false, targetPos: [-0.42, 0.36, 0.22], size: [0.68, 0.82, 0.22], startPos: [-0.6, -3.8, 3.0], startRot: [-3.2, 2.8, -3.1], delay: 4.25, duration: 0.85 },
+        { char: 'R', isUpper: false, targetPos: [0.42, 0.36, 0.22], size: [0.68, 0.82, 0.22], startPos: [5.0, -1.5, 3.4], startRot: [2.8, -4.0, 1.5], delay: 4.9, duration: 0.85 },
+        { char: 'A', isUpper: false, targetPos: [1.26, 0.36, 0.22], size: [0.68, 0.82, 0.22], startPos: [4.8, 4.0, 3.5], startRot: [-3.5, 3.2, -2.8], delay: 5.55, duration: 0.85 },
+      ];
+    }
   }, [brandMode]);
 
   const letterTextures = useMemo(() => {
     return letterConfigs.map((cfg) => createLetterTexture(cfg.char, cfg.isUpper));
   }, [letterConfigs]);
 
+  const logoTexture = useMemo(() => createLogoTexture(brandMode), [brandMode]);
   const taglineTexture = useMemo(() => createTaglineTexture(), []);
   const menuBoardTexture = useMemo(() => createMenuBoardTexture(), []);
 
-  // Kinetic state per letter
-  const trajectoryRef = useRef(
-    letterConfigs.map((item, idx) => {
-      const side = idx % 2 === 0 ? 1 : -1;
-      const startX = side * (4.0 + (idx * 0.5) % 2.5);
-      const startY = 1.0 + ((idx - 3.5) * 0.7);
-      const startZ = 1.0 + ((idx * 0.25) % 1.0);
+  // Audio flags tracking
+  const audioEventsFired = useRef<{ [key: string]: boolean }>({});
 
-      return {
-        targetPos: item.targetPos,
-        startPos: [startX, startY, startZ] as [number, number, number],
-        startRot: [
-          (Math.random() - 0.5) * Math.PI * 4,
-          (Math.random() - 0.5) * Math.PI * 4,
-          (Math.random() - 0.5) * Math.PI * 3,
-        ] as [number, number, number],
-        delay: 0.5 + idx * 0.42,
-        duration: 1.15,
-        landed: false,
-        whooshPlayed: false,
-        flashIntensity: 0,
-      };
-    })
-  );
-
-  // Reset sequence on replay trigger
-  useEffect(() => {
-    animTimeRef.current = 0;
-    glintSweepRef.current = -3.5;
+  const resetAnimation = () => {
+    localTimeRef.current = 0;
     isAssembledRef.current = false;
     glintAudioPlayed.current = false;
+    logoSnapAudioPlayed.current = false;
     neonHumStarted.current = false;
+    audioEventsFired.current = {};
     storefrontAudio.stopNeonHum();
+  };
 
-    trajectoryRef.current = letterConfigs.map((item, idx) => {
-      const side = idx % 2 === 0 ? 1 : -1;
-      const startX = side * (4.0 + (idx * 0.5) % 2.5);
-      const startY = 1.0 + ((idx - 3.5) * 0.7);
-      const startZ = 1.0 + ((idx * 0.25) % 1.0);
+  useEffect(() => {
+    resetAnimation();
+  }, [replayTrigger, brandMode]);
 
-      return {
-        targetPos: item.targetPos,
-        startPos: [startX, startY, startZ] as [number, number, number],
-        startRot: [
-          (Math.random() - 0.5) * Math.PI * 4,
-          (Math.random() - 0.5) * Math.PI * 4,
-          (Math.random() - 0.5) * Math.PI * 3,
-        ] as [number, number, number],
-        delay: 0.5 + idx * 0.42,
-        duration: 1.15,
-        landed: false,
-        whooshPlayed: false,
-        flashIntensity: 0,
-      };
-    });
-  }, [replayTrigger, letterConfigs]);
-
-  // High-performance 60fps frame loop mutating Three.js nodes directly
+  // High-performance 60fps frame loop with exact 10s Director Timeline
   useFrame((_, delta) => {
-    animTimeRef.current += delta;
-    const time = animTimeRef.current;
+    let t: number;
 
-    let allLanded = true;
+    if (currentTime !== undefined) {
+      t = currentTime;
+      localTimeRef.current = currentTime;
+    } else {
+      if (isPlaying) {
+        localTimeRef.current += delta;
+        if (loop && localTimeRef.current > 10.0) {
+          localTimeRef.current = localTimeRef.current % 10.0;
+          audioEventsFired.current = {};
+          glintAudioPlayed.current = false;
+          logoSnapAudioPlayed.current = false;
+          neonHumStarted.current = false;
+          isAssembledRef.current = false;
+          storefrontAudio.stopNeonHum();
+        } else if (!loop && localTimeRef.current > 10.0) {
+          localTimeRef.current = 10.0;
+        }
+      }
+      t = Math.min(localTimeRef.current, 10.0);
+      onTimeUpdate?.(t);
+    }
 
-    trajectoryRef.current.forEach((letter, idx) => {
+    // Foliage gentle breeze
+    if (treeBranchRef.current) {
+      treeBranchRef.current.rotation.z = Math.sin(t * 1.8) * 0.035;
+      treeBranchRef.current.rotation.x = Math.cos(t * 1.4) * 0.025;
+    }
+
+    // ========================================================
+    // 0.0s - 1.0s: Blank Signboard (Prompt: "0-1s sign is blank, no letters, no logo")
+    // ========================================================
+    const isBlankPhase = t < 1.0;
+
+    // ========================================================
+    // 1.0s - 6.8s: Letters Fly In One By One, Spin, Bounce, Click
+    // ========================================================
+    letterConfigs.forEach((cfg, idx) => {
       const grp = letterGroupRefs.current[idx];
       const light = letterLightRefs.current[idx];
       if (!grp) return;
 
-      if (time >= letter.delay && !letter.whooshPlayed) {
-        letter.whooshPlayed = true;
+      if (isBlankPhase || t < cfg.delay) {
+        grp.visible = false;
+        grp.position.set(...cfg.startPos);
+        grp.rotation.set(...cfg.startRot);
+        if (light) light.intensity = 0;
+        return;
+      }
+
+      grp.visible = true;
+
+      // Whoosh sound trigger
+      const whooshKey = `whoosh_${idx}`;
+      if (t >= cfg.delay && !audioEventsFired.current[whooshKey]) {
+        audioEventsFired.current[whooshKey] = true;
         storefrontAudio.playWhoosh();
       }
 
-      if (time > letter.delay) {
-        const localTime = Math.min((time - letter.delay) / letter.duration, 1);
+      const progress = Math.min((t - cfg.delay) / cfg.duration, 1.0);
 
-        // Elastic overshoot formula
-        const c4 = (2 * Math.PI) / 3;
-        const ease =
-          localTime === 0
-            ? 0
-            : localTime === 1
-            ? 1
-            : Math.pow(2, -10 * localTime) * Math.sin((localTime * 10 - 0.75) * c4) + 1;
+      // Elastic overshoot formula for physical spring recoil
+      const c4 = (2 * Math.PI) / 3;
+      const ease =
+        progress === 0
+          ? 0
+          : progress === 1
+          ? 1
+          : Math.pow(2, -10 * progress) * Math.sin((progress * 10 - 0.75) * c4) + 1;
 
-        grp.position.x = THREE.MathUtils.lerp(letter.startPos[0], letter.targetPos[0], ease);
-        grp.position.y = THREE.MathUtils.lerp(letter.startPos[1], letter.targetPos[1], ease);
-        grp.position.z = THREE.MathUtils.lerp(letter.startPos[2], letter.targetPos[2], ease);
+      grp.position.x = THREE.MathUtils.lerp(cfg.startPos[0], cfg.targetPos[0], ease);
+      grp.position.y = THREE.MathUtils.lerp(cfg.startPos[1], cfg.targetPos[1], ease);
+      grp.position.z = THREE.MathUtils.lerp(cfg.startPos[2], cfg.targetPos[2], ease);
 
-        grp.rotation.x = THREE.MathUtils.lerp(letter.startRot[0], 0, ease);
-        grp.rotation.y = THREE.MathUtils.lerp(letter.startRot[1], 0, ease);
-        grp.rotation.z = THREE.MathUtils.lerp(letter.startRot[2], 0, ease);
+      grp.rotation.x = THREE.MathUtils.lerp(cfg.startRot[0], 0, ease);
+      grp.rotation.y = THREE.MathUtils.lerp(cfg.startRot[1], 0, ease);
+      grp.rotation.z = THREE.MathUtils.lerp(cfg.startRot[2], 0, ease);
 
-        if (localTime >= 0.96 && !letter.landed) {
-          letter.landed = true;
-          letter.flashIntensity = 1.0;
-          storefrontAudio.playClickThud();
-        }
+      // Impact click & flash
+      const clickKey = `click_${idx}`;
+      if (progress >= 0.96 && !audioEventsFired.current[clickKey]) {
+        audioEventsFired.current[clickKey] = true;
+        storefrontAudio.playClickThud();
+        storefrontAudio.playPop();
+      }
 
-        if (letter.landed && letter.flashIntensity > 0) {
-          letter.flashIntensity = Math.max(0, letter.flashIntensity - delta * 2.8);
-        }
-
-        if (light) {
-          light.intensity = letter.flashIntensity * 4.0;
-        }
-      } else {
-        allLanded = false;
-        // Keep hidden/at start position before delay
-        grp.position.set(...letter.startPos);
-        grp.rotation.set(...letter.startRot);
+      // Flash calculation
+      if (progress >= 0.96 && t <= cfg.delay + cfg.duration + 0.35) {
+        const flashAge = t - (cfg.delay + cfg.duration * 0.96);
+        const flashIntensity = Math.max(0, 1.0 - flashAge * 3.5);
+        if (light) light.intensity = flashIntensity * 3.8;
+      } else if (light) {
+        light.intensity = 0;
       }
     });
 
-    // Glint light sweep animation (starts around 4.5s)
-    if (time > 4.4 && glintSweepRef.current < 3.6) {
-      if (!glintAudioPlayed.current) {
-        glintAudioPlayed.current = true;
-        storefrontAudio.playGlint();
-      }
-      glintSweepRef.current += delta * 3.8;
-      if (glintMeshRef.current) {
-        glintMeshRef.current.position.x = glintSweepRef.current;
+    // ========================================================
+    // 6.8s - 8.0s: Logo Icon Stacking Drop & Snap Together
+    // Prompt: "then the logo icon drops in, its parts stacking and snapping together with a small bounce and a glint of light sweeping across"
+    // ========================================================
+    const logoTargetPos: [number, number, number] = [-1.35, 0.96, 0.22]; // Nestled beside "Café"
+
+    // Part A: Logo Saucer/Base Crest
+    const partADelay = 6.6;
+    const partADuration = 0.7;
+    if (logoPartARef.current) {
+      if (t < partADelay) {
+        logoPartARef.current.visible = false;
+        logoPartARef.current.position.set(logoTargetPos[0], 3.8, 1.5);
+      } else {
+        logoPartARef.current.visible = true;
+        const pA = Math.min((t - partADelay) / partADuration, 1.0);
+        const c4 = (2 * Math.PI) / 3;
+        const easeA =
+          pA === 0
+            ? 0
+            : pA === 1
+            ? 1
+            : Math.pow(2, -10 * pA) * Math.sin((pA * 10 - 0.75) * c4) + 1;
+
+        logoPartARef.current.position.y = THREE.MathUtils.lerp(3.8, logoTargetPos[1], easeA);
+        logoPartARef.current.position.x = logoTargetPos[0];
+        logoPartARef.current.position.z = THREE.MathUtils.lerp(1.5, logoTargetPos[2], easeA);
+        logoPartARef.current.rotation.z = THREE.MathUtils.lerp(Math.PI * 2, 0, easeA);
       }
     }
 
-    if (allLanded && !isAssembledRef.current && time > 5.2) {
-      isAssembledRef.current = true;
-      onAssemblyComplete?.();
+    // Part B: Logo Golden Cup / Insignia (stacks directly on top of Part A)
+    const partBDelay = 7.1;
+    const partBDuration = 0.65;
+    if (logoPartBRef.current) {
+      if (t < partBDelay) {
+        logoPartBRef.current.visible = false;
+        logoPartBRef.current.position.set(logoTargetPos[0], 4.5, 2.0);
+      } else {
+        logoPartBRef.current.visible = true;
+        const pB = Math.min((t - partBDelay) / partBDuration, 1.0);
+        const c4 = (2 * Math.PI) / 3;
+        const easeB =
+          pB === 0
+            ? 0
+            : pB === 1
+            ? 1
+            : Math.pow(2, -10 * pB) * Math.sin((pB * 10 - 0.75) * c4) + 1;
+
+        logoPartBRef.current.position.y = THREE.MathUtils.lerp(4.5, logoTargetPos[1], easeB);
+        logoPartBRef.current.position.x = logoTargetPos[0];
+        logoPartBRef.current.position.z = THREE.MathUtils.lerp(2.0, logoTargetPos[2] + 0.015, easeB);
+        logoPartBRef.current.rotation.z = THREE.MathUtils.lerp(-Math.PI * 2, 0, easeB);
+
+        // Logo snap sound & impact flash
+        if (pB >= 0.95 && !logoSnapAudioPlayed.current) {
+          logoSnapAudioPlayed.current = true;
+          storefrontAudio.playLogoSnap();
+          if (logoLightRef.current) logoLightRef.current.intensity = 5.0;
+        }
+
+        if (logoSnapAudioPlayed.current && logoLightRef.current) {
+          const snapAge = t - (partBDelay + partBDuration);
+          logoLightRef.current.intensity = Math.max(0, 5.0 - snapAge * 10);
+        }
+      }
+    }
+
+    // ========================================================
+    // 7.8s - 8.6s: Diagonal Glint Light Sweep
+    // Prompt: "and a glint of light sweeping across"
+    // ========================================================
+    if (glintMeshRef.current) {
+      if (t >= 7.8 && t <= 8.8) {
+        glintMeshRef.current.visible = true;
+        if (!glintAudioPlayed.current) {
+          glintAudioPlayed.current = true;
+          storefrontAudio.playGlint();
+        }
+        const glintProgress = (t - 7.8) / 1.0;
+        glintMeshRef.current.position.x = THREE.MathUtils.lerp(-3.8, 3.8, glintProgress);
+      } else {
+        glintMeshRef.current.visible = false;
+      }
+    }
+
+    // ========================================================
+    // 8.5s - 10.0s: Whole Sign Glows & Electrical Neon Hum
+    // Prompt: "8-10s: the whole sign glows, final frame matches the photo exactly"
+    // ========================================================
+    if (t >= 8.5) {
       if (!neonHumStarted.current) {
         neonHumStarted.current = true;
         storefrontAudio.startNeonHum();
       }
-    }
+      if (!isAssembledRef.current) {
+        isAssembledRef.current = true;
+        onAssemblyComplete?.();
+      }
 
-    if (neonLightRef.current) {
-      neonLightRef.current.intensity = isAssembledRef.current
-        ? 2.5 + Math.sin(time * 10) * 0.25
-        : 0.2;
+      if (neonLightRef.current) {
+        // Subtle electrical neon flicker/hum
+        const glowPulse = 2.6 + Math.sin(t * 12) * 0.25 + Math.cos(t * 22) * 0.1;
+        neonLightRef.current.intensity = glowPulse;
+      }
+    } else {
+      if (neonLightRef.current) {
+        neonLightRef.current.intensity = isBlankPhase ? 0.05 : 0.4;
+      }
     }
   });
 
-  const facadeBlue = isNight ? '#132A52' : '#1D3E77'; // Royal Cobalt Blue
+  const facadeBlue = isNight ? '#132A52' : '#1D3E77'; // Royal Cobalt Blue matching photo
   const orangeBase = '#FF6B00';
   const orangeBevel = '#FF8C1A';
 
@@ -355,6 +520,16 @@ export const StorefrontModel: React.FC<StorefrontModelProps> = ({
       <mesh position={[0, 2.5, -0.1]} receiveShadow>
         <boxGeometry args={[7.4, 1.8, 0.45]} />
         <meshStandardMaterial color={isNight ? '#1A1D24' : '#2C323D'} roughness={0.85} />
+      </mesh>
+
+      {/* Flanking urban building facades for seamless widescreen framing */}
+      <mesh position={[-5.7, 0.2, -0.2]} receiveShadow>
+        <boxGeometry args={[4.2, 5.2, 0.45]} />
+        <meshStandardMaterial color={isNight ? '#14171E' : '#222730'} roughness={0.9} />
+      </mesh>
+      <mesh position={[5.7, 0.2, -0.2]} receiveShadow>
+        <boxGeometry args={[4.2, 5.2, 0.45]} />
+        <meshStandardMaterial color={isNight ? '#14171E' : '#222730'} roughness={0.9} />
       </mesh>
 
       {/* Paneled upper windows with warm reflection */}
@@ -387,14 +562,14 @@ export const StorefrontModel: React.FC<StorefrontModelProps> = ({
         <meshStandardMaterial color={isNight ? '#101B2B' : '#182A45'} roughness={0.35} metalness={0.2} />
       </mesh>
 
-      {/* ================= 2. THE SIGNBOARD (Vibrant Royal Cobalt Blue) ================= */}
+      {/* ================= 2. THE SIGNBOARD (Royal Cobalt Blue #1D3E77) ================= */}
       <group position={[0, 0.65, 0.05]}>
         {/* Main Blue Facade Panel */}
         <mesh receiveShadow castShadow>
           <boxGeometry args={[7.2, 1.8, 0.22]} />
           <meshStandardMaterial
             color={facadeBlue}
-            roughness={0.42}
+            roughness={0.38}
             metalness={0.12}
           />
         </mesh>
@@ -405,26 +580,27 @@ export const StorefrontModel: React.FC<StorefrontModelProps> = ({
           <meshStandardMaterial color="#12284C" roughness={0.5} />
         </mesh>
 
-        {/* Ambient Neon Backlight for Letters */}
+        {/* Ambient Neon Backlight for Letters & Signboard */}
         <pointLight
           ref={neonLightRef}
           position={[0, 0.1, 0.85]}
           color="#FF851B"
-          intensity={1.2}
-          distance={5.0}
+          intensity={0.4}
+          distance={5.5}
         />
 
         {/* Glint Light Sweep Mesh */}
         <mesh
           ref={glintMeshRef}
-          position={[-3.5, 0.05, 0.26]}
-          rotation={[0, 0, -Math.PI / 6]}
+          position={[-3.8, 0.05, 0.26]}
+          rotation={[0, 0, -Math.PI / 4]}
+          visible={false}
         >
-          <planeGeometry args={[0.3, 1.7]} />
+          <planeGeometry args={[0.35, 2.2]} />
           <meshBasicMaterial
             color="#FFFFFF"
             transparent
-            opacity={0.8}
+            opacity={0.88}
             blending={THREE.AdditiveBlending}
             depthWrite={false}
           />
@@ -432,7 +608,6 @@ export const StorefrontModel: React.FC<StorefrontModelProps> = ({
 
         {/* Sub-Tagline Ribbon: "Good Coffee. Good Vibes." */}
         <group position={[0, -0.7, 0.13]}>
-          {/* White Ribbon Canvas Texture */}
           <mesh position={[0, 0, 0.01]}>
             <planeGeometry args={[4.4, 0.32]} />
             <meshBasicMaterial map={taglineTexture} transparent />
@@ -450,16 +625,17 @@ export const StorefrontModel: React.FC<StorefrontModelProps> = ({
               key={idx}
               ref={(el) => (letterGroupRefs.current[idx] = el)}
               position={cfg.targetPos}
+              visible={false}
             >
               {/* 3D Extruded Rounded Letter Base Block */}
               <mesh castShadow receiveShadow>
                 <boxGeometry args={cfg.size} />
                 <meshStandardMaterial
                   color={cfg.isUpper ? '#FFA347' : orangeBase}
-                  roughness={0.28}
-                  metalness={0.12}
+                  roughness={0.25}
+                  metalness={0.15}
                   emissive="#FF5500"
-                  emissiveIntensity={isNight ? 0.45 : 0.25}
+                  emissiveIntensity={isNight ? 0.45 : 0.28}
                 />
               </mesh>
 
@@ -497,8 +673,37 @@ export const StorefrontModel: React.FC<StorefrontModelProps> = ({
         })}
       </group>
 
-      {/* ================= 4. GROUND FLOOR STOREFRONT & CLEAR WINDOW ================= */}
-      {/* Ground floor opening centered at Y = -1.25 */}
+      {/* ================= 4. THE 2-PART STACKING LOGO ICON ================= */}
+      {/* Part A: Emblem Base Saucer/Ring */}
+      <group ref={logoPartARef} position={[-1.35, 0.96, 0.22]} visible={false}>
+        <mesh castShadow>
+          <cylinderGeometry args={[0.22, 0.22, 0.05, 32]} />
+          <meshStandardMaterial
+            color="#FF9933"
+            metalness={0.6}
+            roughness={0.25}
+            emissive="#FF6600"
+            emissiveIntensity={0.3}
+          />
+        </mesh>
+      </group>
+
+      {/* Part B: Emblem Golden Insignia Face Plate */}
+      <group ref={logoPartBRef} position={[-1.35, 0.96, 0.24]} visible={false}>
+        <mesh castShadow position={[0, 0, 0.02]}>
+          <planeGeometry args={[0.42, 0.42]} />
+          <meshBasicMaterial map={logoTexture} transparent toneMapped={false} />
+        </mesh>
+        <pointLight
+          ref={logoLightRef}
+          position={[0, 0, 0.5]}
+          color="#FFF5CC"
+          intensity={0}
+          distance={3.0}
+        />
+      </group>
+
+      {/* ================= 5. GROUND FLOOR STOREFRONT & CLEAR WINDOW ================= */}
       <group position={[0, -1.25, 0.1]}>
         {/* Left Wall Pillar */}
         <mesh position={[-3.3, 0, 0]} castShadow receiveShadow>
@@ -544,8 +749,7 @@ export const StorefrontModel: React.FC<StorefrontModelProps> = ({
           <meshStandardMaterial color="#0A101A" />
         </mesh>
 
-        {/* ================= 5. INTERIOR VISIBLE THROUGH THE WINDOW ================= */}
-        {/* Warm Illuminated Café Interior inside the store */}
+        {/* ================= 6. INTERIOR VISIBLE THROUGH THE WINDOW ================= */}
         <group position={[0, 0, -1.25]}>
           {/* Interior Warm Cozy Fill Light */}
           <pointLight position={[0, 0.4, 0.2]} color="#FFE8B5" intensity={3.2} distance={6.0} />
@@ -579,7 +783,6 @@ export const StorefrontModel: React.FC<StorefrontModelProps> = ({
               <planeGeometry args={[2.0, 1.4]} />
               <meshBasicMaterial map={menuBoardTexture} />
             </mesh>
-            {/* Soft menu board downlight */}
             <pointLight position={[0, 0.7, 0.3]} color="#EAF2F8" intensity={0.9} distance={1.8} />
           </group>
 
@@ -597,7 +800,6 @@ export const StorefrontModel: React.FC<StorefrontModelProps> = ({
                 <sphereGeometry args={[0.18, 24, 24]} />
                 <meshBasicMaterial color="#FFF5DC" />
               </mesh>
-              {/* Cozy Warm Interior Light */}
               <pointLight
                 color="#FFE6B3"
                 intensity={isNight ? 3.2 : 2.6}
@@ -610,24 +812,20 @@ export const StorefrontModel: React.FC<StorefrontModelProps> = ({
 
           {/* Barista Counter & Stainless Steel Espresso Machine */}
           <group position={[0.7, -0.38, -1.1]}>
-            {/* Wooden Counter */}
             <mesh castShadow receiveShadow position={[0, 0, 0]}>
               <boxGeometry args={[3.2, 0.76, 1.1]} />
               <meshStandardMaterial color="#3E2718" roughness={0.3} />
             </mesh>
-            {/* Espresso Machine */}
             <mesh position={[0, 0.58, 0]} castShadow>
               <boxGeometry args={[1.3, 0.46, 0.65]} />
               <meshStandardMaterial color="#1E1E1E" metalness={0.88} roughness={0.16} />
             </mesh>
-            {/* Portafilters */}
             {[-0.3, 0.3].map((hx, hi) => (
               <mesh key={hi} position={[hx, 0.5, 0.38]} rotation={[Math.PI / 2, 0, 0]}>
                 <cylinderGeometry args={[0.02, 0.02, 0.2, 12]} />
                 <meshStandardMaterial color="#0A0A0A" />
               </mesh>
             ))}
-            {/* Counter downlight */}
             <pointLight position={[0, 0.9, 0.2]} color="#FFE0B2" intensity={1.4} distance={2.5} />
           </group>
 
@@ -646,7 +844,6 @@ export const StorefrontModel: React.FC<StorefrontModelProps> = ({
                 roughness={0.05}
               />
             </mesh>
-            {/* Golden Croissants inside case */}
             {[-0.36, 0.0, 0.36].map((cx, ci) => (
               <mesh
                 key={ci}
@@ -658,7 +855,6 @@ export const StorefrontModel: React.FC<StorefrontModelProps> = ({
                 <meshStandardMaterial color="#DE8C33" roughness={0.55} />
               </mesh>
             ))}
-            {/* Pastry warm LED light */}
             <pointLight position={[0, 0.38, 0]} color="#FFD180" intensity={1.5} distance={2.0} />
           </group>
 
@@ -692,7 +888,44 @@ export const StorefrontModel: React.FC<StorefrontModelProps> = ({
         </group>
       </group>
 
-      {/* ================= 6. SIDEWALK & STREET ENTRANCE ================= */}
+      {/* ================= 7. UPPER-RIGHT CINEMATIC TREE FOLIAGE (MATCHING PHOTO!) ================= */}
+      <group ref={treeBranchRef} position={[2.7, 2.2, 0.9]} rotation={[0.1, -0.2, -0.15]}>
+        {/* Main branch stem */}
+        <mesh position={[0.4, 0.3, 0]} rotation={[0, 0, -Math.PI / 3]}>
+          <cylinderGeometry args={[0.04, 0.07, 1.2, 8]} />
+          <meshStandardMaterial color="#2E1C0C" roughness={0.9} />
+        </mesh>
+        {/* Branch fork */}
+        <mesh position={[0.1, 0.1, 0.1]} rotation={[0.3, 0.2, -Math.PI / 4]}>
+          <cylinderGeometry args={[0.025, 0.04, 0.8, 8]} />
+          <meshStandardMaterial color="#2E1C0C" roughness={0.9} />
+        </mesh>
+        {/* Lush green leaves hanging into the top right frame */}
+        {[
+          { pos: [-0.3, 0.2, 0.1], rot: [0.2, 0.3, 0.1], scale: 0.16 },
+          { pos: [-0.15, 0.05, 0.15], rot: [-0.1, 0.5, -0.2], scale: 0.2 },
+          { pos: [0.05, -0.1, 0.2], rot: [0.3, -0.2, 0.4], scale: 0.18 },
+          { pos: [-0.45, -0.05, 0.05], rot: [-0.2, 0.1, 0.3], scale: 0.17 },
+          { pos: [-0.2, -0.25, 0.18], rot: [0.1, 0.4, -0.1], scale: 0.21 },
+          { pos: [0.25, 0.1, 0.08], rot: [0.4, -0.3, 0.2], scale: 0.19 },
+          { pos: [-0.05, -0.38, 0.12], rot: [0.2, 0.2, 0.5], scale: 0.22 },
+        ].map((leaf, li) => (
+          <mesh
+            key={li}
+            position={leaf.pos as [number, number, number]}
+            rotation={leaf.rot as [number, number, number]}
+            scale={[leaf.scale * 1.4, leaf.scale * 0.8, leaf.scale * 0.2]}
+          >
+            <sphereGeometry args={[1, 8, 8]} />
+            <meshStandardMaterial
+              color={li % 2 === 0 ? '#2E5A1E' : '#3E7324'}
+              roughness={0.65}
+            />
+          </mesh>
+        ))}
+      </group>
+
+      {/* ================= 8. SIDEWALK & STREET ENTRANCE ================= */}
       <mesh position={[0, -2.3, 1.2]} rotation={[-Math.PI / 2, 0, 0]} receiveShadow>
         <planeGeometry args={[12, 4.5]} />
         <meshStandardMaterial color={isNight ? '#18181B' : '#28282C'} roughness={0.88} />
